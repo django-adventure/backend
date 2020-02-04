@@ -1,7 +1,20 @@
 from django.contrib.auth.models import User
 from adventure.models import Player, Room
-from random import randint
+from random import randint, shuffle
 Room.objects.all().delete()
+adj = ["Sunny", "Gloomy", "Happy", "Scary", "Fun", "Cold", "Fiery", "Lonely", "Boring", "Deadly"]
+nouns = ["Desert", "Plateau", "Savannah", "Forest", "Tundra", "Taiga", "Iceberg", "Lake", "River", "Peak"]
+rooms = []
+descriptions = []
+for i in range(len(adj)):
+    for j in range(len(adj)):
+        rooms.append(adj[i] + " " + nouns[j])
+for i in range(len(adj)):
+    for j in range(len(adj)): 
+        if (i/2 == 0):
+            descriptions.append(f"You are now in the {nouns[j]}. It is {adj[i]}. Keep moving to keep exploring!")
+        else: 
+            descriptions.append(f"This is the {nouns[j]}. It is {adj[i]}! What may await in the next room?")
 class World:
     def __init__(self):
         self.grid = None
@@ -37,7 +50,7 @@ class World:
         y = seed_y
         room_count = 0
         # seed the first room
-        seed_room = Room(title="First Room", description="This is the first room", x=x, y=y)
+        seed_room = Room(title=rooms[0], description=descriptions[0], x=x, y=y)
         seed_room.save()
         self.grid[y][x] = seed_room
         room_count += 1
@@ -61,11 +74,9 @@ class World:
             can_move = True
             # traverse rooms...
             while can_move == True:
-                print("previous_room", previous_room)
-                print("direction", direction)
                 # if no room in grid
+                print(room_count)
                 if not self.is_out_of_bounds(direction, x, y) and self.is_in_grid(direction, x, y) is None:
-                    print(f"creating room -> {direction}")
                     # update coordinate value
                     if direction == 'w':
                         x -= 1
@@ -76,7 +87,7 @@ class World:
                     elif direction == 's':
                         y -= 1
                     # Create a room in the given direction
-                    room = Room(title="Cool room", description="It's cool in here", x=x, y=y)
+                    room = Room(title=rooms[room_count], description=descriptions[room_count], x=x, y=y)
                     # save room 
                     room.save()
                     # Save the room in the World grid
@@ -90,7 +101,6 @@ class World:
                 # if room in grid and prev room is connected to target room,
                 # elif previous_room.getRoomInDirection(direction) != 0:
                 elif getattr(Room.objects.get(id=previous_room), f"{direction}_to") != 0:
-                    print(f"moving {direction} to room")
                     # move to that room
                     # previous_room = getattr(previous_room, f"{direction}_to")
                     previous_room = getattr(Room.objects.get(id=previous_room), f"{direction}_to")
@@ -116,7 +126,6 @@ class World:
                     direction = directions[randint(0, 2)]
                 # if room is outside bounds OR if room in grid and prev room not connected to target room
                 elif self.is_out_of_bounds(direction, x, y) or getattr(Room.objects.get(id=previous_room), f"{direction}_to") == 0:
-                    print("the way is blocked")
                     # if no directions available
                     if directions == None:
                         can_move = False
