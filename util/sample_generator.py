@@ -4,7 +4,7 @@
 # You can modify generate_rooms() to create your own
 # procedural generation algorithm and use print_rooms()
 # to see the world.
-
+from random import randint
 
 class Room:
     def __init__(self, id, name, description, x, y):
@@ -18,9 +18,18 @@ class Room:
         self.x = x
         self.y = y
     def __repr__(self):
+        return_str = ""
+        return_str += f"Room No {self.id} ({self.x}, {self.y})\n"
         if self.e_to is not None:
-            return f"({self.x}, {self.y}) -> ({self.e_to.x}, {self.e_to.y})"
-        return f"({self.x}, {self.y})"
+             return_str += f"({self.x}, {self.y}) east -> ({self.e_to.x}, {self.e_to.y})\n"
+        if self.w_to is not None:
+            return_str += f"({self.x}, {self.y}) west -> ({self.w_to.x}, {self.w_to.y})\n"
+        if self.n_to is not None:
+            return_str += f"({self.x}, {self.y}) north -> ({self.n_to.x}, {self.n_to.y})\n"
+        if self.s_to is not None:
+            return_str += f"({self.x}, {self.y}) south -> ({self.s_to.x}, {self.s_to.y})\n"
+        
+        return return_str
     def connect_rooms(self, connecting_room, direction):
         '''
         Connect two rooms in the given n/s/e/w direction
@@ -39,60 +48,145 @@ class Room:
 class World:
     def __init__(self):
         self.grid = None
-        self.width = 0
-        self.height = 0
-    def generate_rooms(self, size_x, size_y, num_rooms):
+        self.width = 12
+        self.height = 12
+        self.rooms = []
+
+    def is_in_grid(self, direction, x, y):
+        if direction == 'w':
+            return self.grid[y][x - 1]
+        elif direction == 'n':
+            return self.grid[y + 1][x]
+        elif direction == 'e':
+            return self.grid[y][x + 1]
+
+    def is_out_of_bounds(self, direction, x, y):
+        if direction == 'w':
+            return (x - 1) < 0
+        elif direction == 'n':
+            return (y + 1) >= self.height
+        elif direction == 'e':
+            return (x + 1) >= self.width
+
+    def generate_rooms(self):
         '''
         Fill up the grid, bottom to top, in a zig-zag pattern
         '''
 
         # Initialize the grid
-        self.grid = [None] * size_y
-        self.width = size_x
-        self.height = size_y
+        self.grid = [None] * self.height
         for i in range( len(self.grid) ):
-            self.grid[i] = [None] * size_x
+            self.grid[i] = [None] * self.width
 
-        # Start from lower-left corner (0,0)
-        x = -1 # (this will become 0 on the first step)
-        y = 0
+        # start from middle of the bottom row
+        seed_x = self.width // 2
+        seed_y = 0
+
+        x = seed_x
+        y = seed_y
         room_count = 0
-
-        # Start generating rooms to the east
-        direction = 1  # 1: east, -1: west
-
+        # seed the first room
+        seed_room = Room(room_count, "A Generic Room", "This is a generic room.", x, y)
+        self.rooms.append(seed_room)
+        self.grid[y][x] = seed_room
+        room_count += 1
 
         # While there are rooms to be created...
-        previous_room = None
-        while room_count < num_rooms:
+        while room_count < 100:
+            # never travel south
+            directions = ['w', 'n', 'e']
+            prev_direction = None
 
-            # Calculate the direction of the room to be created
-            if direction > 0 and x < size_x - 1:
-                room_direction = "e"
-                x += 1
-            elif direction < 0 and x > 0:
-                room_direction = "w"
-                x -= 1
-            else:
-                # If we hit a wall, turn north and reverse direction
-                room_direction = "n"
-                y += 1
-                direction *= -1
+            # start at the seed room
+            previous_room = seed_room
 
-            # Create a room in the given direction
-            room = Room(room_count, "A Generic Room", "This is a generic room.", x, y)
-            # Note that in Django, you'll need to save the room after you create it
+            # reset x and y coordinates
+            x = seed_x
+            y = seed_y
 
-            # Save the room in the World grid
-            self.grid[y][x] = room
+            # find a random direction
+            direction = directions[randint(0, 2)]
 
-            # Connect the new room to the previous room
-            if previous_room is not None:
-                previous_room.connect_rooms(room, room_direction)
+            can_move = True
 
-            # Update iteration variables
-            previous_room = room
-            room_count += 1
+            # traverse rooms...
+            while can_move == True:
+                # if no room in grid
+                if not self.is_out_of_bounds(direction, x, y) and self.is_in_grid(direction, x, y) is None:
+                    # update coordinate value
+                    if direction == 'w':
+                        x -= 1
+                    elif direction == 'n':
+                        y += 1
+                    elif direction == 'e':
+                        x += 1
+
+                    # Create a room in the given direction
+                    room = Room(room_count, "A Generic Room", "This is a generic room.", x, y)
+                    # Note that in Django, you'll need to save the room after you create it    
+                    self.rooms.append(room)
+
+
+                    # Save the room in the World grid
+                    self.grid[y][x] = room
+
+                    # Connect the new room to the previous room
+                    previous_room.connect_rooms(room, direction)
+
+                    # Update iteration variables
+                    room_count += 1
+
+                    can_move = False
+                # if room in grid and prev room is connected to target room,
+                elif previous_room.get_room_in_direction(direction) is not None:
+                    # move to that room
+                    previous_room = previous_room.get_room_in_direction(direction)
+                    
+                    # update coordinate value
+                    if direction == 'w':
+                        x -= 1
+                    elif direction == 'n':
+                        y += 1
+                    elif direction == 'e':
+                        x += 1
+
+                    # find a new random direction
+                    prev_direction = direction
+                    directions = ['w', 'n', 'e']
+                    direction = directions[randint(0, 2)]
+                # if room is outside bounds OR if room in grid and prev room not connected to target room
+                elif self.is_out_of_bounds(direction, x, y) or previous_room.get_room_in_direction(direction) is None:
+                    # if no directions available
+                    if directions == None:
+                        can_move = False
+                    # try again in available directions
+                    elif len(directions) == 3:
+                        if prev_direction == 'e':
+                            directions = ['n', 'e']
+                            direction = 'n'
+                        elif prev_direction == 'w':
+                            directions = ['n', 'w']
+                            direction = 'n'
+                        elif prev_direction == 'n':
+                            directions = ['w', 'e']
+                            direction = 'w'
+                    elif len(directions) == 2:
+                        if prev_direction == 'e':
+                            direction = 'e'
+                        elif prev_direction == 'w':
+                            direction = 'w'
+                        elif prev_direction == 'n':
+                            direction = 'e'
+                        directions = None
+
+
+            # update coordinate value
+            # if direction == 'w':
+            #     x -= 1
+            # elif direction == 'n':
+            #     y += 1
+            # elif direction == 'e':
+            #     x += 1
 
 
 
@@ -101,61 +195,64 @@ class World:
         Print the rooms in room_grid in ascii characters.
         '''
 
-        # Add top border
-        str = "# " * ((3 + self.width * 5) // 2) + "\n"
+        for room in self.rooms:
+            print(room)
 
-        # The console prints top to bottom but our array is arranged
-        # bottom to top.
-        #
-        # We reverse it so it draws in the right direction.
-        reverse_grid = list(self.grid) # make a copy of the list
-        reverse_grid.reverse()
-        for row in reverse_grid:
-            # PRINT NORTH CONNECTION ROW
-            str += "#"
-            for room in row:
-                if room is not None and room.n_to is not None:
-                    str += "  |  "
-                else:
-                    str += "     "
-            str += "#\n"
-            # PRINT ROOM ROW
-            str += "#"
-            for room in row:
-                if room is not None and room.w_to is not None:
-                    str += "-"
-                else:
-                    str += " "
-                if room is not None:
-                    str += f"{room.id}".zfill(3)
-                else:
-                    str += "   "
-                if room is not None and room.e_to is not None:
-                    str += "-"
-                else:
-                    str += " "
-            str += "#\n"
-            # PRINT SOUTH CONNECTION ROW
-            str += "#"
-            for room in row:
-                if room is not None and room.s_to is not None:
-                    str += "  |  "
-                else:
-                    str += "     "
-            str += "#\n"
+        # # Add top border
+        # str = "# " * ((3 + self.width * 5) // 2) + "\n"
 
-        # Add bottom border
-        str += "# " * ((3 + self.width * 5) // 2) + "\n"
+        # # The console prints top to bottom but our array is arranged
+        # # bottom to top.
+        # #
+        # # We reverse it so it draws in the right direction.
+        # reverse_grid = list(self.grid) # make a copy of the list
+        # reverse_grid.reverse()
+        # for row in reverse_grid:
+        #     # PRINT NORTH CONNECTION ROW
+        #     str += "#"
+        #     for room in row:
+        #         if room is not None and room.n_to is not None:
+        #             str += "  |  "
+        #         else:
+        #             str += "     "
+        #     str += "#\n"
+        #     # PRINT ROOM ROW
+        #     str += "#"
+        #     for room in row:
+        #         if room is not None and room.w_to is not None:
+        #             str += "-"
+        #         else:
+        #             str += " "
+        #         if room is not None:
+        #             str += f"{room.id}".zfill(3)
+        #         else:
+        #             str += "   "
+        #         if room is not None and room.e_to is not None:
+        #             str += "-"
+        #         else:
+        #             str += " "
+        #     str += "#\n"
+        #     # PRINT SOUTH CONNECTION ROW
+        #     str += "#"
+        #     for room in row:
+        #         if room is not None and room.s_to is not None:
+        #             str += "  |  "
+        #         else:
+        #             str += "     "
+        #     str += "#\n"
 
-        # Print string
-        print(str)
+        # # Add bottom border
+        # str += "# " * ((3 + self.width * 5) // 2) + "\n"
+
+        # # Print string
+        # print(str)
 
 
 w = World()
-num_rooms = 44
-width = 8
-height = 7
-w.generate_rooms(width, height, num_rooms)
+num_rooms = 100
+width = 10
+height = 12
+w.generate_rooms()
 w.print_rooms()
 
 
