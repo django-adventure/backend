@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
-import uuid
+from uuid import uuid4
 
 class Room(models.Model):
     title = models.CharField(max_length=50, default="DEFAULT TITLE")
@@ -12,8 +12,12 @@ class Room(models.Model):
     s_to = models.IntegerField(default=0)
     e_to = models.IntegerField(default=0)
     w_to = models.IntegerField(default=0)
+    x = models.IntegerField(default=0)
+    y = models.IntegerField(default=0)
     def connectRooms(self, destinationRoom, direction):
         destinationRoomID = destinationRoom.id
+        reverse_dirs = {"n": "s", "s": "n", "e": "w", "w": "e"}
+        reverse_dir = reverse_dirs[direction]
         try:
             destinationRoom = Room.objects.get(id=destinationRoomID)
         except Room.DoesNotExist:
@@ -30,6 +34,8 @@ class Room(models.Model):
             else:
                 print("Invalid direction")
                 return
+            setattr(destinationRoom, f"{reverse_dir}_to", self.id)
+            destinationRoom.save()
             self.save()
     def playerNames(self, currentPlayerID):
         return [p.user.username for p in Player.objects.filter(currentRoom=self.id) if p.id != int(currentPlayerID)]
@@ -40,7 +46,7 @@ class Room(models.Model):
 class Player(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     currentRoom = models.IntegerField(default=0)
-    uuid = models.UUIDField(default=uuid.uuid4, unique=True)
+    uuid = models.UUIDField(default=uuid4, unique=True)
     def initialize(self):
         if self.currentRoom == 0:
             self.currentRoom = Room.objects.first().id
