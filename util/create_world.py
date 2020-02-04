@@ -1,47 +1,164 @@
 from django.contrib.auth.models import User
 from adventure.models import Player, Room
-
-
+from random import randint
 Room.objects.all().delete()
+class World:
+    def __init__(self):
+        self.grid = None
+        self.width = 12
+        self.height = 12
+    def is_in_grid(self, direction, x, y):
+        if direction == 'w':
+            return self.grid[y][x - 1]
+        elif direction == 'n':
+            return self.grid[y + 1][x]
+        elif direction == 'e':
+            return self.grid[y][x + 1]
+        elif direction == 's':
+            return self.grid[y - 1][x]
+    def is_out_of_bounds(self, direction, x, y):
+        if direction == 'w':
+            return (x - 1) < 0
+        elif direction == 'n':
+            return (y + 1) >= self.height
+        elif direction == 'e':
+            return (x + 1) >= self.width
+        elif direction == 's':
+            return (y - 1) < 0
+    def generate_rooms(self):
+        # Initialize the grid
+        self.grid = [None] * self.height
+        for i in range( len(self.grid) ):
+            self.grid[i] = [None] * self.width
+        # start from middle of the bottom row
+        seed_x = self.width // 2
+        seed_y = self.height // 2
+        x = seed_x
+        y = seed_y
+        room_count = 0
+        # seed the first room
+        seed_room = Room(title="First Room", description="This is the first room", x=x, y=y)
+        seed_room.save()
+        self.grid[y][x] = seed_room
+        room_count += 1
+        # start players in seed room
+        players = Player.objects.all()
+        for p in players:
+            p.currentRoom=seed_room.id
+            p.save()
+        # While there are rooms to be created...
+        while room_count < 100:
+            # never travel south
+            directions = ['w', 'n', 'e', 's']
+            prev_direction = None
+            # start at the seed room
+            previous_room = seed_room.id
+            # reset x and y coordinates
+            x = seed_x
+            y = seed_y
+            # find a random direction
+            direction = directions[randint(0, 3)]
+            can_move = True
+            # traverse rooms...
+            while can_move == True:
+                print("previous_room", previous_room)
+                print("direction", direction)
+                # if no room in grid
+                if not self.is_out_of_bounds(direction, x, y) and self.is_in_grid(direction, x, y) is None:
+                    print(f"creating room -> {direction}")
+                    # update coordinate value
+                    if direction == 'w':
+                        x -= 1
+                    elif direction == 'n':
+                        y += 1
+                    elif direction == 'e':
+                        x += 1
+                    elif direction == 's':
+                        y -= 1
+                    # Create a room in the given direction
+                    room = Room(title="Cool room", description="It's cool in here", x=x, y=y)
+                    # save room 
+                    room.save()
+                    # Save the room in the World grid
+                    self.grid[y][x] = room
+                    # Connect the new room to the previous room
+                    # previous_room.connectRooms(room, direction)
+                    Room.objects.get(id=previous_room).connectRooms(room, direction)
+                    # Update iteration variables
+                    room_count += 1
+                    can_move = False
+                # if room in grid and prev room is connected to target room,
+                # elif previous_room.getRoomInDirection(direction) != 0:
+                elif getattr(Room.objects.get(id=previous_room), f"{direction}_to") != 0:
+                    print(f"moving {direction} to room")
+                    # move to that room
+                    # previous_room = getattr(previous_room, f"{direction}_to")
+                    previous_room = getattr(Room.objects.get(id=previous_room), f"{direction}_to")
+                    # update coordinate value
+                    if direction == 'w':
+                        x -= 1
+                    elif direction == 'n':
+                        y += 1
+                    elif direction == 'e':
+                        x += 1
+                    elif direction == 's':
+                        y -= 1
+                    # find a new random direction
+                    prev_direction = direction
+                    if prev_direction == 'e':
+                        directions = ['n', 'e', 's']
+                    elif prev_direction == 'w':
+                        directions = ['s', 'n', 'w']
+                    elif prev_direction == 'n':
+                        directions = ['e', 'w', 'n']
+                    elif prev_direction == 's':
+                        directions = ['w', 's', 'e']
+                    direction = directions[randint(0, 2)]
+                # if room is outside bounds OR if room in grid and prev room not connected to target room
+                elif self.is_out_of_bounds(direction, x, y) or getattr(Room.objects.get(id=previous_room), f"{direction}_to") == 0:
+                    print("the way is blocked")
+                    # if no directions available
+                    if directions == None:
+                        can_move = False
+                    # try again in available directions
+                    elif len(directions) == 4:
+                        if prev_direction == 'e':
+                            directions = ['n', 'e', 's']
+                            direction = 'n'
+                        elif prev_direction == 'w':
+                            directions = ['s', 'n', 'w']
+                            direction = 's'
+                        elif prev_direction == 'n':
+                            directions = ['e', 'w', 'n']
+                            direction = 'e'
+                        elif prev_direction == 's':
+                            directions = ['w', 's', 'e']
+                            direction = 'w'
+                    elif len(directions) == 3:
+                        if prev_direction == 'e':
+                            directions = ['e', 's']
+                            direction = 'e'
+                        elif prev_direction == 'w':
+                            directions = ['n', 'w']
+                            direction = 'n'
+                        elif prev_direction == 'n':
+                            directions = ['w', 'n']
+                            direction = 'w'
+                        elif prev_direction == 's':
+                            directions = ['s', 'e']
+                            direction = 's'
+                    elif len(directions) == 2:
+                        if prev_direction == 'e':
+                            direction = 's'
+                        elif prev_direction == 'w':
+                            direction = 'w'
+                        elif prev_direction == 'n':
+                            direction = 'n'
+                        elif prev_direction == 's':
+                            direction = 'e'
+                        directions = None
 
-r_outside = Room(title="Outside Cave Entrance",
-               description="North of you, the cave mount beckons")
-
-r_foyer = Room(title="Foyer", description="""Dim light filters in from the south. Dusty
-passages run north and east.""")
-
-r_overlook = Room(title="Grand Overlook", description="""A steep cliff appears before you, falling
-into the darkness. Ahead to the north, a light flickers in
-the distance, but there is no way across the chasm.""")
-
-r_narrow = Room(title="Narrow Passage", description="""The narrow passage bends here from west
-to north. The smell of gold permeates the air.""")
-
-r_treasure = Room(title="Treasure Chamber", description="""You've found the long-lost treasure
-chamber! Sadly, it has already been completely emptied by
-earlier adventurers. The only exit is to the south.""")
-
-r_outside.save()
-r_foyer.save()
-r_overlook.save()
-r_narrow.save()
-r_treasure.save()
-
-# Link rooms together
-r_outside.connectRooms(r_foyer, "n")
-r_foyer.connectRooms(r_outside, "s")
-
-r_foyer.connectRooms(r_overlook, "n")
-r_overlook.connectRooms(r_foyer, "s")
-
-r_foyer.connectRooms(r_narrow, "e")
-r_narrow.connectRooms(r_foyer, "w")
-
-r_narrow.connectRooms(r_treasure, "n")
-r_treasure.connectRooms(r_narrow, "s")
-
-players=Player.objects.all()
-for p in players:
-  p.currentRoom=r_outside.id
-  p.save()
-
+# copy all lines of code above and paste into interpreter
+# then run these two lines:
+w = World()
+w.generate_rooms()
