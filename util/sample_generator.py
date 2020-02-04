@@ -5,6 +5,24 @@
 # procedural generation algorithm and use print_rooms()
 # to see the world.
 from random import randint
+adj = ["Sunny", "Gloomy", "Happy", "Scary", "Fun", "Cold", "Fiery", "Lonely", "Boring", "Deadly"]
+
+nouns = ["Desert", "Plateau", "Savannah", "Forest", "Tundra", "Taiga", "Iceberg", "Lake", "River", "Peak"]
+
+rooms=[]
+
+for i in range(len(adj)):
+    for j in range(len(adj)):
+        rooms.append(adj[i] + " " + nouns[j])
+
+descriptions = []
+
+for i in range(len(adj)):
+    for j in range(len(adj)): 
+        if (i/2 == 0):
+            descriptions.append(f"You are now in the {nouns[j]}. It is {adj[i]}. Keep moving to keep exploring!")
+        else: 
+            descriptions.append(f"This is the {nouns[j]}. It is {adj[i]}! What may await in the next room?")  
 
 class Room:
     def __init__(self, id, name, description, x, y):
@@ -19,7 +37,9 @@ class Room:
         self.y = y
     def __repr__(self):
         return_str = ""
-        return_str += f"Room No {self.id} ({self.x}, {self.y})\n"
+        return_str += f"Room No.: {self.id}, ({self.x}, {self.y})\n"
+        return_str += f"Room Name: {self.name}\n"
+        return_str += f"Room Description: {self.description}\n"
         if self.e_to is not None:
              return_str += f"({self.x}, {self.y}) east -> ({self.e_to.x}, {self.e_to.y})\n"
         if self.w_to is not None:
@@ -50,7 +70,7 @@ class World:
         self.grid = None
         self.width = 12
         self.height = 12
-        self.rooms = []
+        self.rooms = [] 
 
     def is_in_grid(self, direction, x, y):
         if direction == 'w':
@@ -90,7 +110,7 @@ class World:
         y = seed_y
         room_count = 0
         # seed the first room
-        seed_room = Room(room_count, "A Generic Room", "This is a generic room.", x, y)
+        seed_room = Room(room_count, rooms[0], descriptions[0], x, y)
         self.rooms.append(seed_room)
         self.grid[y][x] = seed_room
         room_count += 1
@@ -128,7 +148,7 @@ class World:
                         y -= 1
 
                     # Create a room in the given direction
-                    room = Room(room_count, "A Generic Room", "This is a generic room.", x, y)
+                    room = Room(room_count, rooms[room_count], descriptions[room_count], x, y)
                     # Note that in Django, you'll need to save the room after you create it    
                     self.rooms.append(room)
 
@@ -202,9 +222,8 @@ class World:
                             direction = 'n'
                         elif prev_direction == 's':
                             direction = 'e'
-                        directions = None
-
-
+                        directions = None          
+                        
     def print_rooms(self):
         '''
         Print the rooms in room_grid in ascii characters.
@@ -272,3 +291,4 @@ w.print_rooms()
 
 
 print(f"\n\nWorld\n  height: {height}\n  width: {width},\n  num_rooms: {num_rooms}\n")
+
