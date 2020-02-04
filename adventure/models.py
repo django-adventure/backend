@@ -16,6 +16,8 @@ class Room(models.Model):
     y = models.IntegerField(default=0)
     def connectRooms(self, destinationRoom, direction):
         destinationRoomID = destinationRoom.id
+        reverse_dirs = {"n": "s", "s": "n", "e": "w", "w": "e"}
+        reverse_dir = reverse_dirs[direction]
         try:
             destinationRoom = Room.objects.get(id=destinationRoomID)
         except Room.DoesNotExist:
@@ -32,6 +34,8 @@ class Room(models.Model):
             else:
                 print("Invalid direction")
                 return
+            setattr(destinationRoom, f"{reverse_dir}_to", self.id)
+            destinationRoom.save()
             self.save()
     def playerNames(self, currentPlayerID):
         return [p.user.username for p in Player.objects.filter(currentRoom=self.id) if p.id != int(currentPlayerID)]
