@@ -94,10 +94,15 @@ def say(request):
 @api_view(["POST"])
 def get(request):
     player = request.user.player
-    player_id = player.id
-    player_uuid = player.uuid
+    room = player.room()
     data = json.loads(request.body)
     item = data['item']
+    try:
+        room.items.get(name=item)
+    except Item.DoesNotExist:
+        return JsonResponse({'error_msg':'That item does not exist'}, safe=True)
+
     message = player.get_item(item)
-    inventory = player.items()
-    return JsonResponse({'message': message, 'inventory': inventory}, safe=True)
+    inventory = player.items_res()
+    room_items = room.items_res()
+    return JsonResponse({'message': message, 'inventory': inventory, 'room_items': room_items, 'error_msg':""}, safe=True)

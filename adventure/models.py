@@ -47,7 +47,15 @@ class Room(models.Model):
         return [p.user.username for p in Player.objects.filter(currentRoom=self.id) if p.id != int(currentPlayerID)]
     def playerUUIDs(self, currentPlayerID):
         return [p.uuid for p in Player.objects.filter(currentRoom=self.id) if p.id != int(currentPlayerID)]
-
+    def items_res(self):
+        result = []
+        for item in [i for i in RoomItem.objects.filter(room=self)]:
+            result.append({
+                'name': item.item.name,
+                'description': item.item.description,
+                'count': item.count,
+            })
+        return result
 
 class Player(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -64,7 +72,7 @@ class Player(models.Model):
         except Room.DoesNotExist:
             self.initialize()
             return self.room()
-    def items(self):
+    def items_res(self):
         result = []
         for item in [i for i in Inventory.objects.filter(player=self)]:
             result.append({
@@ -74,13 +82,8 @@ class Player(models.Model):
             })
         return result
     def get_item(self, name):
-        # check if the item is in the current room
-        try:
-            room = Room.objects.get(id=self.currentRoom)
-            item = room.items.get(name=name)
-        except Item.DoesNotExist:
-            return 'That item does not exist'
-        # if it is, remove it from the room and add it to the player
+        room = Room.objects.get(id=self.currentRoom)
+        item = room.items.get(name=name)
         # check the count of item
         room_item = RoomItem.objects.get(room=room, item=item)
         if room_item.count > 1:
