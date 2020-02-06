@@ -4,21 +4,71 @@ from django.contrib.auth.models import User
 from adventure.models import Player, Room
 from random import randint, shuffle
 Room.objects.all().delete()
-adj = ["Sunny", "Gloomy", "Happy", "Scary", "Fun", "Cold", "Fiery", "Lonely", "Boring", "Deadly"]
-nouns = ["Desert", "Plateau", "Savannah", "Forest", "Tundra", "Taiga", "Iceberg", "Lake", "River", "Peak"]
+adj = ["Irradiated", "Gloomy", "Deserted", "Ominous", "Bleak", "Cold", "Secure", "Eerie", "Desolate", "Deadly"]
+nouns = [
+    ["Bunker", "You break into a sturdy concrete bunker. Could there be something stashed away?"], 
+    ["Ruin", "Twisted bits of metal poke out of the unrecognizable burnt wreckage. You might find something to salvage."], 
+    ["Cave", "A dark narrow passage leads to a large humid cave filled with stalactites and stalagmites. You forget which one is which."], 
+    ["Hills", "Scattered shrubs cover the hills before you."], 
+    ["Desert", "Piles of sand stretch ahead for miles. "], 
+    ["Graveyard", "A thick fog covers the crumbling tombstones. You feel a chill run down your spine."], 
+    ["Base", "A rusty fence surrounds clusters of makeshift buildings and vehicles."], 
+    ["Depot", "A maze of dusty shelves littered with junk. Most everything has been looted."], 
+    ["Sewer", "Large tunnels span in several directions. It smells horrible in here."], 
+    ["Town", "One lone building stands in the remnants of a town. If only there was someone to talk to."],
+    ]
 rooms = []
 descriptions = []
+items = [
+    {'name': 'chicken', 'description': 'Friend or food?'},
+    {'name': 'rope', 'description': 'Good for climbing'},
+    {'name': 'matches', 'description': 'A little soggy'},
+    {'name': 'crowbar', 'description': 'A handy all-purpose tool'},
+    {'name': 'cloak', 'description': 'Shield yourself from your enemies'},
+    {'name': 'goo', 'description': 'Strange and glowing'},
+    {'name': 'doubloon', 'description': 'A beautiful gold coin'},
+    {'name': 'batteries', 'description': 'AA, AAA, and AAAAAAAAA'},
+    {'name': 'bitcoin', 'description': 'How did I pick this up?'},
+    {'name': 'lighter', 'description': 'It\'s lit'},
+    {'name': 'bat-on-a-stick', 'description': 'Virus free!'},
+    {'name': 'donut', 'description': 'It\'s chocolate flavored. Jeff already took a bite.'},
+]
+# **************************************************************************
+# counter = 0
+# for r in all_rooms:
+#     r.title = rooms[counter]
+#     r.description = descriptions[counter]
+#     r.save()
+#     counter += 1
+all_items=[]
+for i in items:
+    new_item = Item(name=i['name'], description=i['description'])
+    all_items.append(new_item)
+    new_item.save()
+counter = 0
+for r in all_rooms:
+    if counter % 2 == 0:
+        i = randint(0, 11)
+        r.items.add(all_items[i])
+    if counter % 3 == 0:
+        i = randint(0, 11)
+        r.items.add(all_items[i])
+    if counter % 5 == 0:
+        i = randint(0, 11)
+        r.items.add(all_items[i])
+    counter += 1
 # **************************************************************************
 for i in range(len(adj)):
     for j in range(len(adj)):
-        rooms.append(adj[i] + " " + nouns[j])
+        rooms.append(adj[i] + " " + nouns[j][0])
 # **************************************************************************
+vowels = ['A', 'E', 'I', 'O', 'U']
 for i in range(len(adj)):
     for j in range(len(adj)): 
-        if (i/2 == 0):
-            descriptions.append(f"You are now in the {nouns[j]}. It is {adj[i]}. Keep moving to keep exploring!")
-        else: 
-            descriptions.append(f"This is the {nouns[j]}. It is {adj[i]}! What may await in the next room?")
+        if adj[i][0] in vowels:
+            descriptions.append(f"{nouns[j][1]} It gives you an {adj[i].lower()} feeling.")
+        else:
+            descriptions.append(f"{nouns[j][1]} It gives you a {adj[i].lower()} feeling.")
 # **************************************************************************
 class World:
     def __init__(self):
