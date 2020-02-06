@@ -102,7 +102,27 @@ class Player(models.Model):
 
         return f'You picked up the {item.name}'
 
-        
+    def drop_item(self, name):
+        room = Room.objects.get(id=self.currentRoom)
+        item = self.items.get(name=name)
+        # check the count of item
+        player_item = Inventory.objects.get(player=self, item=item)
+        if player_item.count > 1:
+            player_item.count -= 1
+            player_item.save()
+        elif player_item.count == 1:
+            # remove from room
+            self.items.remove(item)
+
+        try:
+            room_item = RoomItem.objects.get(room=room, item=item)
+            room_item.count += 1
+            room_item.save()
+        except RoomItem.DoesNotExist:
+            room.items.add(item)
+
+        return f'You dropped the {item.name}'    
+
 
 @receiver(post_save, sender=User)
 def create_user_player(sender, instance, created, **kwargs):

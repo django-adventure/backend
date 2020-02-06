@@ -106,3 +106,21 @@ def get(request):
     inventory = player.items_res()
     room_items = room.items_res()
     return JsonResponse({'message': message, 'inventory': inventory, 'room_items': room_items, 'error_msg':""}, safe=True)
+
+
+@csrf_exempt
+@api_view(["POST"])
+def drop(request):
+    player = request.user.player
+    room = player.room()
+    data = json.loads(request.body)
+    item = data['item']
+    try:
+        player.items.get(name=item)
+    except Item.DoesNotExist:
+        return JsonResponse({'error_msg':'You don\'t have that item!'}, safe=True)
+
+    message = player.drop_item(item)
+    inventory = player.items_res()
+    room_items = room.items_res()
+    return JsonResponse({'message': message, 'inventory': inventory, 'room_items': room_items, 'error_msg':""}, safe=True)
