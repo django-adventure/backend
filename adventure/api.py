@@ -88,3 +88,16 @@ def say(request):
             pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} says "{message}"'})
 
     return JsonResponse({'name':player.user.username, 'title':room.title, 'message':message}, safe=True)
+
+
+@csrf_exempt
+@api_view(["POST"])
+def get(request):
+    player = request.user.player
+    player_id = player.id
+    player_uuid = player.uuid
+    data = json.loads(request.body)
+    item = data['item']
+    message = player.get_item(item)
+    inventory = player.items()
+    return JsonResponse({'message': message, 'inventory': inventory}, safe=True)

@@ -64,6 +64,42 @@ class Player(models.Model):
         except Room.DoesNotExist:
             self.initialize()
             return self.room()
+    def items(self):
+        result = []
+        for item in [i for i in Inventory.objects.filter(player=self)]:
+            result.append({
+                'name': item.item.name,
+                'description': item.item.description,
+                'count': item.count,
+            })
+        return result
+    def get_item(self, name):
+        # check if the item is in the current room
+        try:
+            room = Room.objects.get(id=self.currentRoom)
+            item = room.items.get(name=name)
+        except Item.DoesNotExist:
+            return 'That item does not exist'
+        # if it is, remove it from the room and add it to the player
+        # check the count of item
+        room_item = RoomItem.objects.get(room=room, item=item)
+        if room_item.count > 1:
+            room_item.count -= 1
+            room_item.save()
+        elif room_item.count == 1:
+            # remove from room
+            room.items.remove(item)
+
+        try:
+            inventory = Inventory.objects.get(player=self, item=item)
+            inventory.count += 1
+            inventory.save()
+        except Inventory.DoesNotExist:
+            self.items.add(item)
+
+        return f'You picked up the {item.name}'
+
+        
 
 @receiver(post_save, sender=User)
 def create_user_player(sender, instance, created, **kwargs):
