@@ -5,6 +5,11 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 from uuid import uuid4
 
+class Item(models.Model):
+    name = models.CharField(max_length=50, default="DEFAULT ITEM")
+    description = models.TextField(max_length=500, default="DEFAULT DESCRIPTION")
+
+
 class Room(models.Model):
     title = models.CharField(max_length=50, default="DEFAULT TITLE")
     description = models.CharField(max_length=500, default="DEFAULT DESCRIPTION")
@@ -14,6 +19,7 @@ class Room(models.Model):
     w_to = models.IntegerField(default=0)
     x = models.IntegerField(default=0)
     y = models.IntegerField(default=0)
+    items = models.ManyToManyField(Item, through='RoomItem')
     def connectRooms(self, destinationRoom, direction):
         destinationRoomID = destinationRoom.id
         reverse_dirs = {"n": "s", "s": "n", "e": "w", "w": "e"}
@@ -47,6 +53,7 @@ class Player(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     currentRoom = models.IntegerField(default=0)
     uuid = models.UUIDField(default=uuid4, unique=True)
+    items = models.ManyToManyField(Item, through='Inventory')
     def initialize(self):
         if self.currentRoom == 0:
             self.currentRoom = Room.objects.first().id
@@ -68,6 +75,17 @@ def create_user_player(sender, instance, created, **kwargs):
 def save_user_player(sender, instance, **kwargs):
     instance.player.save()
 
+
+class Inventory(models.Model):
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, null=True)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, null=True)
+    count = models.IntegerField(default=1)
+
+
+class RoomItem(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, null=True)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, null=True)
+    count = models.IntegerField(default=1)
 
 
 
