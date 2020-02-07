@@ -34,12 +34,13 @@ items = [
     {'name': 'donut', 'description': 'It\'s chocolate flavored. Jeff already took a bite.'},
 ]
 # **************************************************************************
-# counter = 0
-# for r in all_rooms:
-#     r.title = rooms[counter]
-#     r.description = descriptions[counter]
-#     r.save()
-#     counter += 1
+all_rooms = Room.objects.all()
+counter = 0
+for r in all_rooms:
+    r.title = rooms[counter]
+    r.description = descriptions[counter]
+    r.save()
+    counter += 1
 all_items=[]
 for i in items:
     new_item = Item(name=i['name'], description=i['description'])
