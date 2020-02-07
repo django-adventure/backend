@@ -106,7 +106,7 @@ def get(request):
     message = player.get_item(item)
     inventory = player.items_res()
     room_items = room.items_res()
-    return JsonResponse({'message': message, 'item': item_taken, 'inventory': inventory, 'room_items': room_items, 'error_msg':""}, safe=True)
+    return JsonResponse({'message': message, 'item': {"name": item_taken.name, "description": item_taken.description}, 'inventory': inventory, 'room_items': room_items, 'error_msg':""}, safe=True)
 
 
 @csrf_exempt
