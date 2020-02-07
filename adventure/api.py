@@ -99,14 +99,14 @@ def get(request):
     data = json.loads(request.body)
     item = data['item']
     try:
-        room.items.get(name=item)
+        item_taken = room.items.get(name=item)
     except Item.DoesNotExist:
         return JsonResponse({'error_msg':'That item does not exist'}, safe=True)
 
     message = player.get_item(item)
     inventory = player.items_res()
     room_items = room.items_res()
-    return JsonResponse({'message': message, 'inventory': inventory, 'room_items': room_items, 'error_msg':""}, safe=True)
+    return JsonResponse({'message': message, 'item': item_taken, 'inventory': inventory, 'room_items': room_items, 'error_msg':""}, safe=True)
 
 
 @csrf_exempt
