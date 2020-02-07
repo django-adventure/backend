@@ -124,3 +124,18 @@ def drop(request):
     inventory = player.items_res()
     room_items = room.items_res()
     return JsonResponse({'message': message, 'inventory': inventory, 'room_items': room_items, 'error_msg':""}, safe=True)
+
+@csrf_exempt
+@api_view(["GET"])
+def inventory(request):
+    player = request.user.player
+    inventory = player.items_res()
+    return JsonResponse({'inventory': inventory}, safe=True)
+
+@csrf_exempt
+@api_view(["GET"])
+def look(request):
+    player = request.user.player
+    room = player.room()
+    room_items = room.items_res()
+    return JsonResponse({'room_items':room_items}, safe=True)
