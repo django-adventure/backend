@@ -21,7 +21,8 @@ def initialize(request):
     room = player.room()
     rooms = list(Room.objects.values('id', 'title', 'x', 'y', 'n_to', 's_to', 'e_to', 'w_to'))
     players = room.playerNames(player_id)
-    return JsonResponse({'uuid': uuid, 'name':player.user.username, 'title':room.title, 'description':room.description, 'x':room.x, 'y':room.y, 'players':players, 'rooms': rooms}, safe=True)
+    inventory = player.items_res()
+    return JsonResponse({'uuid': uuid, 'name':player.user.username, 'title':room.title, 'description':room.description, 'inventory': inventory, 'x':room.x, 'y':room.y, 'players':players, 'rooms': rooms}, safe=True)
 
 @csrf_exempt
 @api_view(["GET"])
