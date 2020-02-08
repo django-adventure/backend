@@ -10,4 +10,6 @@ urlpatterns = [
     url('drop', api.drop),
     url('look', api.look),
     url('inventory', api.inventory),
+    url('scan', api.scan),
+    url('steal', api.steal),
 ]

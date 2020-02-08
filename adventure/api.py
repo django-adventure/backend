@@ -143,3 +143,52 @@ def look(request):
     room = player.room()
     room_items = room.items_res()
     return JsonResponse({'room_items':room_items}, safe=True)
+
+@csrf_exempt
+@api_view(["POST"])
+def scan(request):
+    player = request.user.player
+    data = json.loads(request.body)
+    target_player_name = data['player']
+    room = player.room()
+    current_player_names = room.playerNames(player.id)
+
+    if target_player_name in current_player_names:
+        target_items = Player.objects.get(user__username=target_player_name).items_res()
+
+        current_player_UUIDs = room.playerUUIDs(player.id)
+        for p_uuid in current_player_UUIDs:
+                pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} scanned {target_player_name}'})
+        
+        return JsonResponse({'items': target_items, 'error_msg':""}, safe=True)
+    else:
+        return JsonResponse({'items': "", 'error_msg':"Player not found"}, safe=True)
+
+
+@csrf_exempt
+@api_view(["POST"])
+def steal(request):
+    player = request.user.player
+    data = json.loads(request.body)
+    target_player_name = data['player']
+    target_item = data['item']
+    room = player.room()
+    current_player_names = room.playerNames(player.id)
+
+    if target_player_name in current_player_names:
+        target_player = Player.objects.get(user__username=target_player_name)
+        target_items = target_player.items_res()
+
+        if target_item in [i['name'] for i in target_items]:
+            player.steal_item(target_item, target_player)
+            inventory = player.items_res()
+
+            current_player_UUIDs = room.playerUUIDs(player.id)
+            for p_uuid in current_player_UUIDs:
+                    pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} stole from {target_player_name}!'})
+        
+            return JsonResponse({'inventory': inventory, 'error_msg':""}, safe=True)
+        else:
+            return JsonResponse({'error_msg':f'{target_player_name} does not have that.'}, safe=True)
+    else:
+        return JsonResponse({'error_msg':"Player not found"}, safe=True)
