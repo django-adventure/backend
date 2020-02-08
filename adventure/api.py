@@ -154,11 +154,15 @@ def scan(request):
     current_player_names = room.playerNames(player.id)
 
     if target_player_name in current_player_names:
-        target_items = Player.objects.get(user__username=target_player_name).items_res()
+        target_player = Player.objects.get(user__username=target_player_name)
+        target_items = target_player.items_res()
 
         current_player_UUIDs = room.playerUUIDs(player.id)
         for p_uuid in current_player_UUIDs:
+            if p_uuid != target_player.uuid:
                 pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} scanned {target_player_name}'})
+            else:
+                pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} scanned you'})
         
         return JsonResponse({'items': target_items, 'error_msg':""}, safe=True)
     else:
@@ -185,8 +189,11 @@ def steal(request):
 
             current_player_UUIDs = room.playerUUIDs(player.id)
             for p_uuid in current_player_UUIDs:
+                if p_uuid != target_player.uuid:
                     pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} stole from {target_player_name}!'})
-        
+                else:
+                    pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} stole your {target_item}!'})
+
             return JsonResponse({'inventory': inventory, 'error_msg':""}, safe=True)
         else:
             return JsonResponse({'error_msg':f'{target_player_name} does not have that.'}, safe=True)
