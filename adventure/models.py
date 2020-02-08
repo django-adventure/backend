@@ -121,7 +121,28 @@ class Player(models.Model):
         except RoomItem.DoesNotExist:
             room.items.add(item)
 
-        return f'You dropped the {item.name}'    
+        return f'You dropped the {item.name}'
+
+    def steal_item(self, target_item_name, target_player):
+        target_item = Item.objects.get(name=target_item_name)
+
+        # if the target item is already in the player's inventory, increase the count
+        try:
+            player_item = Inventory.objects.get(player=self, item=target_item)
+            player_item.count += 1
+            player_item.save()
+        # otherwise add to the player's inventory
+        except Inventory.DoesNotExist:
+            self.items.add(target_item)
+
+        target_inventory = Inventory.objects.get(player=target_player, item=target_item)
+        # if more than one target item in target player's inventory, decrease count
+        if target_inventory.count > 1:
+            target_inventory.count -= 1
+            target_inventory.save()
+        # otherwise remove from target player's inventory
+        else:
+            target_player.items.remove(target_item)
 
 
 @receiver(post_save, sender=User)
