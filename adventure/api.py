@@ -48,7 +48,6 @@ def move(request):
     reverse_dirs = {"n": "south", "s": "north", "e": "west", "w": "east"}
     player = request.user.player
     player_id = player.id
-    player_uuid = player.uuid
     data = json.loads(request.body)
     direction = data['direction']
     room = player.room()
@@ -90,7 +89,6 @@ def move(request):
 def say(request):
     player = request.user.player
     player_id = player.id
-    player_uuid = player.uuid
     data = json.loads(request.body)
     message = data['message']
     room = player.room()
@@ -210,9 +208,9 @@ def steal(request):
             current_player_UUIDs = room.playerUUIDs(player.id)
             for p_uuid in current_player_UUIDs:
                 if p_uuid != target_player.uuid:
-                    pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} stole from {target_player_name}!'})
+                    pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} stole from {target_player_name}!', 'update': 'inventory'})
                 else:
-                    pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} stole your {target_item}!'})
+                    pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} stole your {target_item}!', 'update': 'inventory'})
 
             return JsonResponse({'inventory': inventory, 'error_msg':""}, safe=True)
         else:
